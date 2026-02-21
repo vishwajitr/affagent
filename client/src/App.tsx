@@ -1,10 +1,13 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import Campaigns from './pages/Campaigns';
+import Login from './pages/Login';
+import { useAuth } from './hooks/useAuth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,18 +18,43 @@ const queryClient = new QueryClient({
   },
 });
 
+function AuthGate() {
+  const { isAuthenticated, logout } = useAuth();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  if (!ready) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <Login onSuccess={() => {
+        queryClient.clear();
+        window.location.href = '/';
+      }} />
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout onLogout={logout} />}>
+          <Route index element={<Dashboard />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="campaigns" element={<Campaigns />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="contacts" element={<Contacts />} />
-            <Route path="campaigns" element={<Campaigns />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AuthGate />
       <Toaster
         position="top-right"
         toastOptions={{
