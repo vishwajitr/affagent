@@ -3,14 +3,21 @@ import { prisma } from '../utils/prisma';
 import { startCampaignCalls } from '../services/campaignService';
 import { validateTwilioConfig } from '../services/twilioService';
 import { createError } from '../middleware/errorHandler';
+import { requireAuth } from '../middleware/auth';
 import { CreateCampaignBody } from '../types';
 
 const router = Router();
 
+// All campaign routes require auth
+router.use(requireAuth);
+
 // GET /api/campaigns
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = req.user!.userId;
+
     const campaigns = await prisma.campaign.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: { select: { calls: true } },
@@ -26,8 +33,10 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 // GET /api/campaigns/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: req.params.id },
+    const userId = req.user!.userId;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: req.params.id, userId },
       include: {
         calls: {
           include: { contact: true },
@@ -49,13 +58,14 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/campaigns
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = req.user!.userId;
     const { name, script } = req.body as CreateCampaignBody;
 
     if (!name?.trim()) return next(createError('Campaign name is required', 400));
     if (!script?.trim()) return next(createError('Campaign script is required', 400));
 
     const campaign = await prisma.campaign.create({
-      data: { name: name.trim(), script: script.trim() },
+      data: { userId, name: name.trim(), script: script.trim() },
     });
 
     res.status(201).json({ success: true, data: campaign });
@@ -67,20 +77,20 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/campaigns/:id/start
 router.post('/:id/start', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Validate Twilio config BEFORE attempting any calls
+    const userId = req.user!.userId;
+
     const configError = validateTwilioConfig();
     if (configError) {
       return next(createError(`Twilio not configured: ${configError}`, 400));
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: req.params.id },
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: req.params.id, userId },
     });
-
     if (!campaign) return next(createError('Campaign not found', 404));
 
     const pendingCount = await prisma.contact.count({
-      where: { status: 'NOT_CALLED' },
+      where: { userId, status: 'NOT_CALLED' },
     });
 
     if (pendingCount === 0) {
@@ -88,7 +98,7 @@ router.post('/:id/start', async (req: Request, res: Response, next: NextFunction
     }
 
     // Fire and forget — calls run in background
-    startCampaignCalls(campaign.id).catch((err) => {
+    startCampaignCalls(campaign.id, userId).catch((err) => {
       console.error('Campaign start error:', err);
     });
 
@@ -105,6 +115,13 @@ router.post('/:id/start', async (req: Request, res: Response, next: NextFunction
 // DELETE /api/campaigns/:id
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = req.user!.userId;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: req.params.id, userId },
+    });
+    if (!campaign) return next(createError('Campaign not found', 404));
+
     await prisma.campaign.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Campaign deleted' });
   } catch (err) {

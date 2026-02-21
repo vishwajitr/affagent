@@ -7,20 +7,49 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach JWT token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('voxly_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    const status = err.response?.status;
     const message =
       err.response?.data?.error ||
       err.response?.data?.message ||
       err.message ||
       'An unexpected error occurred';
+
+    // Auto-logout on 401 only for protected routes (not login/register)
+    const url = err.config?.url || '';
+    if (status === 401 && !url.includes('/auth/')) {
+      localStorage.removeItem('voxly_token');
+      localStorage.removeItem('voxly_auth');
+      window.location.href = '/login';
+      return Promise.reject(err);
+    }
+
     toast.error(message);
     return Promise.reject(err);
   }
 );
 
 export default api;
+
+// ─── Auth ──────────────────────────────────────────────────────
+export const authApi = {
+  register: (username: string, password: string) =>
+    api.post('/auth/register', { username, password }),
+
+  login: (username: string, password: string) =>
+    api.post('/auth/login', { username, password }),
+};
 
 // ─── Contacts ─────────────────────────────────────────────────
 export const contactsApi = {

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import authRoutes from './routes/auth';
 import campaignRoutes from './routes/campaigns';
 import contactRoutes from './routes/contacts';
 import webhookRoutes from './routes/webhooks';
@@ -43,6 +44,7 @@ app.get('/api/config/status', (_req, res) => {
 });
 
 // ─── API Routes ────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/contacts', contactRoutes);
 

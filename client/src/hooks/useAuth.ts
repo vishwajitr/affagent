@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
+import { authApi } from '../services/api';
 
+const TOKEN_KEY = 'voxly_token';
 const AUTH_KEY = 'voxly_auth';
-const DEMO_USERNAME = 'demo';
-const DEMO_PASSWORD = 'demo@123';
 
 interface AuthState {
   isAuthenticated: boolean;
   username: string | null;
+  userId: string | null;
 }
 
 function getStoredAuth(): AuthState {
   try {
+    const token = localStorage.getItem(TOKEN_KEY);
     const raw = localStorage.getItem(AUTH_KEY);
-    if (raw) return JSON.parse(raw);
+    if (token && raw) return JSON.parse(raw);
   } catch {
     // ignore
   }
-  return { isAuthenticated: false, username: null };
+  return { isAuthenticated: false, username: null, userId: null };
 }
 
 export function useAuth() {
@@ -26,18 +28,25 @@ export function useAuth() {
     localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
   }, [auth]);
 
-  const login = (username: string, password: string): boolean => {
-    if (username === DEMO_USERNAME && password === DEMO_PASSWORD) {
-      setAuth({ isAuthenticated: true, username });
-      return true;
-    }
-    return false;
+  const login = async (username: string, password: string): Promise<void> => {
+    const res = await authApi.login(username, password);
+    const { token, username: uname, userId } = res.data.data;
+    localStorage.setItem(TOKEN_KEY, token);
+    setAuth({ isAuthenticated: true, username: uname, userId });
+  };
+
+  const register = async (username: string, password: string): Promise<void> => {
+    const res = await authApi.register(username, password);
+    const { token, username: uname, userId } = res.data.data;
+    localStorage.setItem(TOKEN_KEY, token);
+    setAuth({ isAuthenticated: true, username: uname, userId });
   };
 
   const logout = () => {
-    setAuth({ isAuthenticated: false, username: null });
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(AUTH_KEY);
+    setAuth({ isAuthenticated: false, username: null, userId: null });
   };
 
-  return { ...auth, login, logout };
+  return { ...auth, login, register, logout };
 }

@@ -3,15 +3,16 @@ import { initiateCall } from './twilioService';
 
 const CALL_DELAY_MS = 1000; // 1 second between calls to avoid rate limiting
 
-export async function startCampaignCalls(campaignId: string): Promise<void> {
-  const campaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
+export async function startCampaignCalls(campaignId: string, userId: string): Promise<void> {
+  const campaign = await prisma.campaign.findFirst({
+    where: { id: campaignId, userId },
   });
 
   if (!campaign) throw new Error(`Campaign ${campaignId} not found`);
 
+  // Only call contacts that belong to this user
   const contacts = await prisma.contact.findMany({
-    where: { status: 'NOT_CALLED' },
+    where: { userId, status: 'NOT_CALLED' },
   });
 
   if (contacts.length === 0) {
@@ -21,7 +22,6 @@ export async function startCampaignCalls(campaignId: string): Promise<void> {
 
   console.log(`🚀 Starting campaign "${campaign.name}" for ${contacts.length} contacts`);
 
-  // Fire calls asynchronously with staggered delay to avoid rate limits
   (async () => {
     for (const contact of contacts) {
       await initiateCall({

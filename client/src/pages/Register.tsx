@@ -7,10 +7,11 @@ interface Props {
   onSuccess: () => void;
 }
 
-export default function Login({ onSuccess }: Props) {
-  const { login } = useAuth();
+export default function Register({ onSuccess }: Props) {
+  const { register } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,16 +19,25 @@ export default function Login({ onSuccess }: Props) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await login(username.trim(), password);
-      toast.success(`Welcome back, ${username.trim()}!`);
+      await register(username.trim(), password);
+      toast.success(`Account created! Welcome, ${username.trim()}!`);
       onSuccess();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Invalid username or password.';
+        'Registration failed. Please try again.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -56,10 +66,11 @@ export default function Login({ onSuccess }: Props) {
 
           {/* Form */}
           <div className="px-8 py-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Sign in to your account</h2>
-            <p className="text-sm text-gray-500 mb-6">Enter your credentials to access the dashboard</p>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Create your account</h2>
+            <p className="text-sm text-gray-500 mb-6">Start automating your outreach in minutes</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Username */}
               <div>
                 <label className="label" htmlFor="username">Username</label>
                 <div className="relative">
@@ -73,7 +84,7 @@ export default function Login({ onSuccess }: Props) {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
+                    placeholder="Choose a username"
                     className="input pl-9"
                     autoComplete="username"
                     required
@@ -81,6 +92,7 @@ export default function Login({ onSuccess }: Props) {
                 </div>
               </div>
 
+              {/* Password */}
               <div>
                 <label className="label" htmlFor="password">Password</label>
                 <div className="relative">
@@ -94,9 +106,9 @@ export default function Login({ onSuccess }: Props) {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
+                    placeholder="Min. 6 characters"
                     className="input pl-9 pr-10"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
                   />
                   <button
@@ -115,6 +127,28 @@ export default function Login({ onSuccess }: Props) {
                       </svg>
                     )}
                   </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="label" htmlFor="confirmPassword">Confirm Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat your password"
+                    className="input pl-9"
+                    autoComplete="new-password"
+                    required
+                  />
                 </div>
               </div>
 
@@ -138,18 +172,18 @@ export default function Login({ onSuccess }: Props) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Signing in...
+                    Creating account...
                   </>
                 ) : (
-                  'Sign In'
+                  'Create Account'
                 )}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-brand-600 font-semibold hover:underline">
-                Create one free
+              Already have an account?{' '}
+              <Link to="/login" className="text-brand-600 font-semibold hover:underline">
+                Sign in
               </Link>
             </p>
           </div>

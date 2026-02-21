@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import Campaigns from './pages/Campaigns';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Landing from './pages/Landing';
 import { useAuth } from './hooks/useAuth';
 
@@ -29,6 +30,8 @@ function AppRoutes() {
 
   if (!ready) return null;
 
+  const goToDashboard = () => { window.location.href = '/dashboard'; };
+
   return (
     <BrowserRouter>
       <Routes>
@@ -39,7 +42,15 @@ function AppRoutes() {
           element={
             isAuthenticated
               ? <Navigate to="/dashboard" replace />
-              : <Login onSuccess={() => { window.location.href = '/dashboard'; }} />
+              : <Login onSuccess={goToDashboard} />
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated
+              ? <Navigate to="/dashboard" replace />
+              : <Register onSuccess={goToDashboard} />
           }
         />
 
@@ -51,7 +62,11 @@ function AppRoutes() {
             <Route path="campaigns" element={<Campaigns />} />
           </Route>
         ) : (
-          <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+          <>
+            <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+            <Route path="/contacts" element={<Navigate to="/login" replace />} />
+            <Route path="/campaigns" element={<Navigate to="/login" replace />} />
+          </>
         )}
 
         <Route path="*" element={<Navigate to="/" replace />} />
