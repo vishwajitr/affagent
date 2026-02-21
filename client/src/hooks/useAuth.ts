@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const AUTH_KEY = 'affagent_auth';
+const AUTH_KEY = 'voxly_auth';
 const DEMO_USERNAME = 'demo';
 const DEMO_PASSWORD = 'demo@123';
 

@@ -1,7 +1,7 @@
 {
-  "name": "affagent-server",
+  "name": "voxly-server",
   "version": "1.0.0",
-  "description": "AI Voice Calling CRM - Backend",
+  "description": "Voxly — AI Voice Calling CRM - Backend",
   "main": "dist/index.js",
   "scripts": {
     "postinstall": "prisma generate",

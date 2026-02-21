@@ -1,7 +1,7 @@
 {
-  "name": "affagent-client",
+  "name": "voxly-client",
   "version": "1.0.0",
-  "description": "AI Voice Calling CRM - Frontend",
+  "description": "Voxly — AI Voice Calling CRM - Frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

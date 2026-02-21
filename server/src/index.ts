@@ -17,7 +17,7 @@ app.use(
     origin: [
       'http://localhost:5173',
       'http://localhost:3000',
-      'https://affagent-2nae-7sxmvfdi0-sportybruh1990s-projects.vercel.app',
+      'https://voxly.vercel.app',
     ],
     credentials: true,
   })

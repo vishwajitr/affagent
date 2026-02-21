@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import Campaigns from './pages/Campaigns';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import { useAuth } from './hooks/useAuth';
 
 const queryClient = new QueryClient({
@@ -18,7 +19,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function AuthGate() {
+function AppRoutes() {
   const { isAuthenticated, logout } = useAuth();
   const [ready, setReady] = useState(false);
 
@@ -28,24 +29,32 @@ function AuthGate() {
 
   if (!ready) return null;
 
-  if (!isAuthenticated) {
-    return (
-      <Login onSuccess={() => {
-        queryClient.clear();
-        window.location.href = '/';
-      }} />
-    );
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout onLogout={logout} />}>
-          <Route index element={<Dashboard />} />
-          <Route path="contacts" element={<Contacts />} />
-          <Route path="campaigns" element={<Campaigns />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated
+              ? <Navigate to="/dashboard" replace />
+              : <Login onSuccess={() => { window.location.href = '/dashboard'; }} />
+          }
+        />
+
+        {/* Protected app routes */}
+        {isAuthenticated ? (
+          <Route path="/" element={<Layout onLogout={logout} />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="contacts" element={<Contacts />} />
+            <Route path="campaigns" element={<Campaigns />} />
+          </Route>
+        ) : (
+          <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+        )}
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
@@ -54,7 +63,7 @@ function AuthGate() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthGate />
+      <AppRoutes />
       <Toaster
         position="top-right"
         toastOptions={{

@@ -6,7 +6,7 @@ interface LayoutProps {
 
 const navItems = [
   {
-    to: '/',
+    to: '/dashboard',
     label: 'Dashboard',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@ export default function Layout({ onLogout }: LayoutProps) {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-gray-900">AffAgent</h1>
+              <h1 className="text-sm font-bold text-gray-900">Voxly</h1>
               <p className="text-xs text-gray-500">Voice Calling CRM</p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export default function Layout({ onLogout }: LayoutProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/dashboard'}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive

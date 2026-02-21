@@ -1,4 +1,4 @@
-# AffAgent — AI Voice Calling CRM
+# Voxly — AI Voice Calling CRM
 
 A production-ready SaaS CRM for automated voice calling using Twilio with DTMF keypad input detection (Press 1 / Press 2).
 
@@ -34,7 +34,7 @@ A production-ready SaaS CRM for automated voice calling using Twilio with DTMF k
 ## Project Structure
 
 ```
-affagent/
+voxly/
 ├── client/                  # React frontend
 │   ├── src/
 │   │   ├── components/      # Layout, StatsCard, StatusBadge, etc.
@@ -93,7 +93,7 @@ cp .env.example .env
 Edit `server/.env`:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/affagent_db"
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/voxly_db"
 TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 TWILIO_AUTH_TOKEN="your_auth_token"
 TWILIO_PHONE_NUMBER="+1xxxxxxxxxx"
