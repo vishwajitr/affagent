@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContactStatus {
+  NOT_CALLED
+  CALLED
+  INTERESTED
+  NOT_INTERESTED
+  NO_ANSWER
+  FAILED
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  ANSWERED
+  FAILED
+}
+
+model Contact {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String        @unique
+  status       ContactStatus @default(NOT_CALLED)
+  lastResponse String?
+  retryCount   Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  calls        Call[]
+
+  @@index([status])
+  @@index([phone])
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  name      String
+  script    String   @db.Text
+  createdAt DateTime @default(now())
+  calls     Call[]
+}
+
+model Call {
+  id         String     @id @default(cuid())
+  contactId  String
+  campaignId String
+  callSid    String?    @unique
+  callStatus CallStatus @default(INITIATED)
+  userInput  String?
+  duration   Int?
+  createdAt  DateTime   @default(now())
+
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([campaignId])
+  @@index([callSid])
+}
