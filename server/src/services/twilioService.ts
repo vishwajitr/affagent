@@ -77,7 +77,7 @@ export async function initiateCall(options: CallOptions): Promise<string | null>
         url: voiceUrl,
         statusCallback: statusCallbackUrl,
         statusCallbackMethod: 'POST',
-        timeout: 30,
+        timeout: 20,
       });
 
       // Create call record
