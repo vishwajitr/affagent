@@ -129,7 +129,7 @@ export default function Landing() {
             onClick={() => navigate('/login')}
             className="btn-primary text-sm"
           >
-            Sign In →
+            Demo →
           </button>
         </div>
       </nav>
@@ -364,7 +364,7 @@ export default function Landing() {
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <a href="#features" className="hover:text-gray-600 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-gray-600 transition-colors">Pricing</a>
-            <button onClick={() => navigate('/login')} className="hover:text-brand-600 font-medium transition-colors">Sign In</button>
+            <button onClick={() => navigate('/login')} className="hover:text-brand-600 font-medium transition-colors">Demo</button>
           </div>
         </div>
       </footer>
