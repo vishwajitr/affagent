@@ -49,6 +49,9 @@ export const authApi = {
 
   login: (username: string, password: string) =>
     api.post('/auth/login', { username, password }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
 };
 
 // ─── Contacts ─────────────────────────────────────────────────

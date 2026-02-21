@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   onLogout: () => void;
@@ -32,9 +33,21 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/profile',
+    label: 'Profile',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Layout({ onLogout }: LayoutProps) {
+  const { username } = useAuth();
+  const initials = username ? username.slice(0, 2).toUpperCase() : '??';
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
@@ -77,10 +90,31 @@ export default function Layout({ onLogout }: LayoutProps) {
 
         {/* Footer */}
         <div className="px-4 py-4 border-t border-gray-200 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-xs text-gray-500">System Online</span>
+          {/* User info */}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-2 py-2 rounded-lg transition-colors ${
+                isActive ? 'bg-brand-50' : 'hover:bg-gray-50'
+              }`
+            }
+          >
+            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">@{username}</p>
+              <p className="text-xs text-gray-400">View profile</p>
+            </div>
+          </NavLink>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-xs text-gray-500">System Online</span>
+            </div>
           </div>
+
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"

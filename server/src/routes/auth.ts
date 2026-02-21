@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma';
 import { createError } from '../middleware/errorHandler';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -63,6 +64,30 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       success: true,
       data: { token, username: user.username, userId: user.id },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/auth/change-password  (requires auth)
+router.post('/change-password', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+
+    if (!currentPassword) return next(createError('Current password is required', 400));
+    if (!newPassword || newPassword.length < 6) return next(createError('New password must be at least 6 characters', 400));
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return next(createError('User not found', 404));
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return next(createError('Current password is incorrect', 401));
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+
+    res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
     next(err);
   }
