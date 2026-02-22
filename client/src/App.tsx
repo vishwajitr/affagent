@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import Campaigns from './pages/Campaigns';
 import Profile from './pages/Profile';
+import Integrations from './pages/Integrations';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
@@ -62,6 +63,7 @@ function AppRoutes() {
             <Route path="contacts" element={<Contacts />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="integrations" element={<Integrations />} />
           </Route>
         ) : (
           <>
@@ -69,6 +71,7 @@ function AppRoutes() {
             <Route path="/contacts" element={<Navigate to="/login" replace />} />
             <Route path="/campaigns" element={<Navigate to="/login" replace />} />
             <Route path="/profile" element={<Navigate to="/login" replace />} />
+            <Route path="/integrations" element={<Navigate to="/login" replace />} />
           </>
         )}
 

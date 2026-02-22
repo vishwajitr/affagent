@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
 import { startCampaignCalls } from '../services/campaignService';
-import { validateTwilioConfig } from '../services/twilioService';
+import { validateUserTwilioConfig } from '../services/twilioService';
 import { createError } from '../middleware/errorHandler';
 import { requireAuth } from '../middleware/auth';
 import { CreateCampaignBody } from '../types';
@@ -79,7 +79,19 @@ router.post('/:id/start', async (req: Request, res: Response, next: NextFunction
   try {
     const userId = req.user!.userId;
 
-    const configError = validateTwilioConfig();
+    // Fetch user's own Twilio credentials
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { twilioSid: true, twilioToken: true, twilioPhone: true },
+    });
+
+    const creds = {
+      twilioSid: user?.twilioSid ?? '',
+      twilioToken: user?.twilioToken ?? '',
+      twilioPhone: user?.twilioPhone ?? '',
+    };
+
+    const configError = validateUserTwilioConfig(creds);
     if (configError) {
       return next(createError(`Twilio not configured: ${configError}`, 400));
     }
@@ -97,8 +109,11 @@ router.post('/:id/start', async (req: Request, res: Response, next: NextFunction
       return next(createError('No contacts with "Not Called" status to dial.', 400));
     }
 
-    // Fire and forget — calls run in background
-    startCampaignCalls(campaign.id, userId).catch((err) => {
+    startCampaignCalls(campaign.id, userId, {
+      twilioSid: creds.twilioSid,
+      twilioToken: creds.twilioToken,
+      twilioPhone: creds.twilioPhone,
+    }).catch((err) => {
       console.error('Campaign start error:', err);
     });
 

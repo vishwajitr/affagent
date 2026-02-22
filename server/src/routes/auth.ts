@@ -93,4 +93,76 @@ router.post('/change-password', requireAuth, async (req: Request, res: Response,
   }
 });
 
+// GET /api/auth/twilio-settings  (requires auth)
+router.get('/twilio-settings', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { twilioSid: true, twilioPhone: true, twilioToken: true },
+    });
+
+    if (!user) return next(createError('User not found', 404));
+
+    const configured = !!(user.twilioSid && user.twilioToken && user.twilioPhone);
+
+    res.json({
+      success: true,
+      data: {
+        configured,
+        twilioSid: user.twilioSid ?? null,
+        twilioPhone: user.twilioPhone ?? null,
+        // Never expose the full token — just whether it's set
+        twilioTokenSet: !!user.twilioToken,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/auth/twilio-settings  (requires auth)
+router.put('/twilio-settings', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { twilioSid, twilioToken, twilioPhone } = req.body as {
+      twilioSid?: string;
+      twilioToken?: string;
+      twilioPhone?: string;
+    };
+
+    if (!twilioSid?.trim()) return next(createError('Twilio Account SID is required', 400));
+    if (!twilioSid.trim().startsWith('AC')) return next(createError('Account SID must start with "AC"', 400));
+    if (twilioSid.trim().length !== 34) return next(createError('Account SID must be 34 characters', 400));
+    if (!twilioToken?.trim()) return next(createError('Twilio Auth Token is required', 400));
+    if (!twilioPhone?.trim()) return next(createError('Twilio Phone Number is required', 400));
+    if (!twilioPhone.trim().startsWith('+')) return next(createError('Phone number must be in E.164 format (e.g. +919876543210)', 400));
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        twilioSid: twilioSid.trim(),
+        twilioToken: twilioToken.trim(),
+        twilioPhone: twilioPhone.trim(),
+      },
+    });
+
+    res.json({ success: true, message: 'Twilio settings saved successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/auth/twilio-settings  (requires auth) — remove integration
+router.delete('/twilio-settings', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { twilioSid: null, twilioToken: null, twilioPhone: null },
+    });
+    res.json({ success: true, message: 'Twilio integration removed' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

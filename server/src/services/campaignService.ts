@@ -1,16 +1,15 @@
 import { prisma } from '../utils/prisma';
-import { initiateCall } from './twilioService';
+import { initiateCall, UserTwilioCreds } from './twilioService';
 
-const CALL_DELAY_MS = 1000; // 1 second between calls to avoid rate limiting
+const CALL_DELAY_MS = 1000;
 
-export async function startCampaignCalls(campaignId: string, userId: string): Promise<void> {
+export async function startCampaignCalls(campaignId: string, userId: string, creds: UserTwilioCreds): Promise<void> {
   const campaign = await prisma.campaign.findFirst({
     where: { id: campaignId, userId },
   });
 
   if (!campaign) throw new Error(`Campaign ${campaignId} not found`);
 
-  // Only call contacts that belong to this user
   const contacts = await prisma.contact.findMany({
     where: { userId, status: 'NOT_CALLED' },
   });
@@ -29,6 +28,7 @@ export async function startCampaignCalls(campaignId: string, userId: string): Pr
         campaignId: campaign.id,
         toPhone: contact.phone,
         script: campaign.script,
+        creds,
       });
       await sleep(CALL_DELAY_MS);
     }

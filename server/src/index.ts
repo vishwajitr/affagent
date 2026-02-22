@@ -6,7 +6,6 @@ import campaignRoutes from './routes/campaigns';
 import contactRoutes from './routes/contacts';
 import webhookRoutes from './routes/webhooks';
 import { errorHandler, notFound } from './middleware/errorHandler';
-import { validateTwilioConfig } from './services/twilioService';
 import { prisma } from './utils/prisma';
 
 const app = express();
@@ -33,12 +32,10 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── Config Status (Twilio readiness) ─────────────────────────
+// ─── Config Status ─────────────────────────────────────────────
 app.get('/api/config/status', (_req, res) => {
-  const twilioError = validateTwilioConfig();
   res.json({
-    twilioConfigured: twilioError === null,
-    twilioError: twilioError,
+    status: 'ok',
     baseUrl: process.env.BASE_URL || null,
   });
 });

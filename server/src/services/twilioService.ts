@@ -3,50 +3,34 @@ import { prisma } from '../utils/prisma';
 
 const MAX_RETRIES = 2;
 
-function getTwilioClient() {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-
-  if (!sid || sid.startsWith('AC' + 'xxxx') || sid === 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
-    throw new Error('TWILIO_ACCOUNT_SID is not configured. Please update your .env file.');
-  }
-  if (!token || token === 'your_auth_token_here') {
-    throw new Error('TWILIO_AUTH_TOKEN is not configured. Please update your .env file.');
-  }
-  return twilio(sid, token);
+export interface UserTwilioCreds {
+  twilioSid: string;
+  twilioToken: string;
+  twilioPhone: string;
 }
 
-export function validateTwilioConfig(): string | null {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const phone = process.env.TWILIO_PHONE_NUMBER;
-  const baseUrl = process.env.BASE_URL;
+export function validateUserTwilioConfig(creds: Partial<UserTwilioCreds>): string | null {
+  const { twilioSid, twilioToken, twilioPhone } = creds;
 
-  if (!sid || sid === 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') {
-    return 'TWILIO_ACCOUNT_SID is not set in .env';
+  if (!twilioSid) return 'Twilio Account SID is not set. Go to Profile → Twilio Integration to add it.';
+  if (!twilioSid.startsWith('AC')) return 'Twilio Account SID must start with "AC". Check your Twilio console.';
+  if (twilioSid.length !== 34) return `Twilio Account SID must be 34 characters (found ${twilioSid.length}).`;
+  if (!twilioToken) return 'Twilio Auth Token is not set. Go to Profile → Twilio Integration to add it.';
+  if (twilioToken.length < 20) return 'Twilio Auth Token looks too short. Copy the full token from twilio.com/console.';
+  if (!twilioPhone) return 'Twilio Phone Number is not set. Go to Profile → Twilio Integration to add it.';
+  if (!twilioPhone.startsWith('+')) return 'Twilio Phone Number must be in E.164 format (e.g. +919876543210).';
+
+  const baseUrl = process.env.BASE_URL;
+  if (!baseUrl || !baseUrl.startsWith('https://')) {
+    return 'BASE_URL is not configured on the server. Contact support.';
   }
-  if (!sid.startsWith('AC')) {
-    return `TWILIO_ACCOUNT_SID is invalid — it must start with "AC" (found: "${sid.substring(0, 4)}..."). Copy it from console.twilio.com → Account Info.`;
-  }
-  if (sid.length !== 34) {
-    return `TWILIO_ACCOUNT_SID must be 34 characters long (found ${sid.length}). Copy it from console.twilio.com → Account Info.`;
-  }
-  if (!token || token === 'your_auth_token_here') {
-    return 'TWILIO_AUTH_TOKEN is not set in .env';
-  }
-  if (token.length < 20) {
-    return 'TWILIO_AUTH_TOKEN looks too short — copy the full token from console.twilio.com → Account Info.';
-  }
-  if (!phone || phone === '+1xxxxxxxxxx') {
-    return 'TWILIO_PHONE_NUMBER is not set in .env';
-  }
-  if (!baseUrl || baseUrl === 'https://your-ngrok-or-domain.com') {
-    return 'BASE_URL is not set in .env — run ngrok and paste the HTTPS URL here.';
-  }
-  if (!baseUrl.startsWith('https://')) {
-    return 'BASE_URL must start with https:// — Twilio requires a public HTTPS URL (use ngrok).';
-  }
+
   return null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getVoice(): any {
+  return process.env.TWILIO_VOICE || 'Polly.Aditi';
 }
 
 export interface CallOptions {
@@ -54,18 +38,18 @@ export interface CallOptions {
   campaignId: string;
   toPhone: string;
   script: string;
+  creds: UserTwilioCreds;
 }
 
 export async function initiateCall(options: CallOptions): Promise<string | null> {
-  const { contactId, campaignId, toPhone, script } = options;
+  const { contactId, campaignId, toPhone, script, creds } = options;
   const baseUrl = process.env.BASE_URL!;
 
   const voiceUrl = `${baseUrl}/voice?campaignId=${campaignId}&contactId=${contactId}`;
   const statusCallbackUrl = `${baseUrl}/call-status?contactId=${contactId}&campaignId=${campaignId}`;
 
+  const client = twilio(creds.twilioSid, creds.twilioToken);
   let lastError: Error | null = null;
-
-  const client = getTwilioClient();
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -73,24 +57,17 @@ export async function initiateCall(options: CallOptions): Promise<string | null>
 
       const call = await client.calls.create({
         to: toPhone,
-        from: process.env.TWILIO_PHONE_NUMBER!,
+        from: creds.twilioPhone,
         url: voiceUrl,
         statusCallback: statusCallbackUrl,
         statusCallbackMethod: 'POST',
         timeout: 20,
       });
 
-      // Create call record
       await prisma.call.create({
-        data: {
-          contactId,
-          campaignId,
-          callSid: call.sid,
-          callStatus: 'INITIATED',
-        },
+        data: { contactId, campaignId, callSid: call.sid, callStatus: 'INITIATED' },
       });
 
-      // Mark contact as CALLED
       await prisma.contact.update({
         where: { id: contactId },
         data: { status: 'CALLED' },
@@ -101,14 +78,10 @@ export async function initiateCall(options: CallOptions): Promise<string | null>
     } catch (err) {
       lastError = err as Error;
       console.error(`❌ Call attempt ${attempt} failed for ${toPhone}:`, lastError.message);
-
-      if (attempt < MAX_RETRIES) {
-        await sleep(2000 * attempt);
-      }
+      if (attempt < MAX_RETRIES) await sleep(2000 * attempt);
     }
   }
 
-  // All retries exhausted - mark as FAILED
   console.error(`💀 All ${MAX_RETRIES} attempts failed for contact ${contactId}`);
 
   await prisma.contact.update({
@@ -117,24 +90,10 @@ export async function initiateCall(options: CallOptions): Promise<string | null>
   });
 
   await prisma.call.create({
-    data: {
-      contactId,
-      campaignId,
-      callStatus: 'FAILED',
-    },
+    data: { contactId, campaignId, callStatus: 'FAILED' },
   });
 
   return null;
-}
-
-// Voice options:
-//   Indian English (female): Polly.Aditi  | Polly.Aditi-Neural (higher quality) | Polly.Raveena
-//   US English (female):     Polly.Joanna | alice
-//   UK English (female):     Polly.Amy
-// Set TWILIO_VOICE in .env to override. Default: Polly.Aditi (Indian English)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getVoice(): any {
-  return process.env.TWILIO_VOICE || 'Polly.Aditi';
 }
 
 export function generateVoiceResponse(script: string, campaignId: string, contactId: string): string {

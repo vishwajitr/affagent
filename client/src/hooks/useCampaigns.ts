@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { campaignsApi, configApi } from '../services/api';
+import { campaignsApi, authApi } from '../services/api';
 import { Campaign } from '../types';
 import toast from 'react-hot-toast';
 
 export function useTwilioConfig() {
-  return useQuery<{ twilioConfigured: boolean; twilioError: string | null; baseUrl: string | null }>({
-    queryKey: ['config-status'],
+  return useQuery<{ configured: boolean; twilioSid: string | null; twilioPhone: string | null; twilioTokenSet: boolean }>({
+    queryKey: ['twilio-settings'],
     queryFn: async () => {
-      const res = await configApi.getStatus();
-      return res.data;
+      const res = await authApi.getTwilioSettings();
+      return res.data.data;
     },
     staleTime: 60_000,
   });

@@ -52,6 +52,15 @@ export const authApi = {
 
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
+
+  getTwilioSettings: () =>
+    api.get('/auth/twilio-settings'),
+
+  saveTwilioSettings: (data: { twilioSid: string; twilioToken: string; twilioPhone: string }) =>
+    api.put('/auth/twilio-settings', data),
+
+  removeTwilioSettings: () =>
+    api.delete('/auth/twilio-settings'),
 };
 
 // ─── Contacts ─────────────────────────────────────────────────

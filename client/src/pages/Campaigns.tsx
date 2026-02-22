@@ -34,7 +34,7 @@ function CampaignCard({ campaign, onStart, onDelete, isStarting, isDeleting, twi
             onClick={() => onStart(campaign.id)}
             disabled={isStarting || twilioReady === false}
             className={`btn-success text-xs ${twilioReady === false ? 'opacity-40 cursor-not-allowed' : ''}`}
-            title={twilioReady === false ? 'Configure Twilio credentials in server/.env first' : 'Start calling contacts'}
+            title={twilioReady === false ? 'Add your Twilio credentials in Profile → Twilio Integration first' : 'Start calling contacts'}
           >
             {isStarting ? (
               <>
@@ -105,8 +105,7 @@ export default function Campaigns() {
   const startMutation = useStartCampaign();
   const deleteMutation = useDeleteCampaign();
 
-  const twilioReady = configData?.twilioConfigured ?? null;
-  const twilioError = configData?.twilioError ?? null;
+  const twilioReady = configData?.configured ?? null;
 
   const campaigns = data?.data ?? [];
 
@@ -158,21 +157,22 @@ export default function Campaigns() {
       <div className="p-8 space-y-6">
         {/* Twilio Config Warning */}
         {twilioReady === false && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl px-5 py-4">
-            <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-5 py-4">
+            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <div>
-              <p className="text-sm font-semibold text-red-800">Twilio Not Configured — Calls Will Fail</p>
-              <p className="text-sm text-red-700 mt-1">{twilioError}</p>
-              <div className="mt-3 bg-red-100 rounded-lg px-4 py-3 text-xs text-red-800 font-mono space-y-1">
-                <p className="font-bold text-red-900 font-sans mb-2">Edit <code>server/.env</code> and set:</p>
-                <p>TWILIO_ACCOUNT_SID=<span className="text-red-600">ACxxxxxxxxx</span></p>
-                <p>TWILIO_AUTH_TOKEN=<span className="text-red-600">your_real_token</span></p>
-                <p>TWILIO_PHONE_NUMBER=<span className="text-red-600">+1xxxxxxxxxx</span></p>
-                <p>BASE_URL=<span className="text-red-600">https://xxxx.ngrok.io</span></p>
-              </div>
-              <p className="text-xs text-red-600 mt-2">After editing, restart the server with <code className="bg-red-100 px-1 rounded">npm run dev</code> in the <code className="bg-red-100 px-1 rounded">server/</code> folder.</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">Twilio Not Connected — Calls Will Fail</p>
+              <p className="text-sm text-amber-700 mt-1">
+                You need to connect your Twilio account before launching campaigns.
+                Go to your Profile and add your Twilio credentials.
+              </p>
+              <a href="/profile" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Go to Profile → Twilio Integration
+              </a>
             </div>
           </div>
         )}
@@ -181,7 +181,7 @@ export default function Campaigns() {
             <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Twilio is configured and ready. Campaigns will dial contacts immediately on launch.
+            Twilio is connected and ready. Campaigns will dial contacts immediately on launch.
           </div>
         )}
 
